@@ -31,17 +31,15 @@ async def on_message(message: discord.Message):
     global voice_client
     texto: str = message.content
     print(texto)
-    channel = message.author.voice.channel
     if not texto.startswith(CALL_NAME) or message.author.name == CALL_NAME:
         return
     comando = texto[len(CALL_NAME):]
     print(f"comando: {comando}")
-
     if comando.startswith("canta lista "):
         name_list = comando[len("canta lista "):]
         print(f"gonna play list {name_list}")
         source = SpotifyCache(url="", name=name_list)
-        voice_client = await source.connect_to_voice_channel(voice_client=voice_client, voice_channel=channel)
+        voice_client = await source.connect_to_voice_channel(voice_client=voice_client, voice_channel=message.author.voice.channel)
         await source.play_playlist(voice_client=voice_client, message=message)
     elif comando.startswith("canta "):
         link = comando[len("canta "):]
@@ -49,15 +47,20 @@ async def on_message(message: discord.Message):
         if "https://youtu" in link:
             source = YTSource(url=link, name="")
             voice_client = await source.connect_to_voice_channel(
-                voice_client=voice_client, voice_channel=channel)
+                voice_client=voice_client, voice_channel=message.author.voice.channel)
             source.play_in(voice_client=voice_client)
         else:
             print("Unexpected link")
             await message.reply(
                 "que coño acabas de mandar bro, vete a dar un paseo 🚶‍♂️🚶‍♂️🚶‍♂️")
+    elif comando.startswith('listas'):
+        await SpotifyCache.read_list(message=message)
     elif comando.startswith("descarga "):
         params = comando[len("descarga "):]
         params = params.split(" ")
+        if(len(params) != 2):
+            await message.reply("tienes que decirme \"pichi descarga nombre-lista https://open.spotify...\", el nombre de la lista no puede tener espacios")
+            return
         name = params[0]
         url = params[1]
         print(f"url: {url}, name: {name}, params: {params}")

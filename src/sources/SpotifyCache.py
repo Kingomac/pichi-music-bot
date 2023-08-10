@@ -17,13 +17,15 @@ class SpotifyCache(MusicSource):
         self.channel_asked = None
 
     def create_list() -> None:
-        file = open('cached/list.json', 'w')
+        file = open('cached/list.json', 'w+')
         file.write(json.dumps({}))
         file.close()
 
     def add_to_list(self) -> None:
+        if not os.path.exists('cached/list.json'):
+            SpotifyCache.create_list()
         file = open('cached/list.json', 'r')
-        data = json.load(file.read())
+        data = json.load(file)
         file.close()
         data[self.name] = self.url
         file = open('cached/list.json', 'w')
@@ -31,8 +33,11 @@ class SpotifyCache(MusicSource):
         file.close()
 
     async def read_list(message: Message):
+        if not os.path.exists("cached/list.json"):
+            await message.reply("no existe lista 😫😫 voy a crearla")
+            SpotifyCache.create_list()
         file = open('cached/list.json', 'r')
-        data: dict = json.load(file.read())
+        data: dict = json.load(file)
         file.close()
         toret = ""
         for key in data:
@@ -42,14 +47,17 @@ class SpotifyCache(MusicSource):
 
     async def download(self, message: Message) -> None:
         await message.reply("a sus ordenes mi capitan")
+        os.mkdir(f'cached/{self.name}')
         result = subprocess.run(["python", "-m", "spotdl", "--format",
                                  "opus", "--output", f"cached/{self.name}", "sync", self.url, "--save-file", f"cached/{self.name}/syncfile.sync.spotdl"], capture_output=True)
         print(
             f"download ended with code {result.returncode} and stdout: {result.stdout} and stderr: {result.stderr}")
         if result.returncode == 0:
             await message.channel.send(f"listo gfe <@{message.author.id}>, ya puedes escuchar tus rulas")
+            self.add_to_list()
         else:
-            await message.channel.send(f"turboliada con código {result.returncode}, stdout -> {result.stdout} y stderr -> {result.stderr}")
+            await message.channel.send(f"turboliada con código {result.returncode}")
+            print("download error stdout -> {result.stdout} y stderr -> {result.stderr}")
 
     async def play_playlist(self, voice_client: VoiceClient, message: Message) -> None:
         if not os.path.exists(f'cached/{self.name}'):
@@ -69,18 +77,21 @@ class SpotifyCache(MusicSource):
 
     def after_song(self, err: Exception):
         if err != None:
+            print("after-song error: " + err)
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             asyncio.run_coroutine_threadsafe(
-                self.after_song_fail, loop=loop)
+                self.after_song_fail(), loop=loop)
+            return
         if self.song_queue.empty():
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             asyncio.run_coroutine_threadsafe(
-                self.after_song_empty, loop=loop)
+                self.after_song_empty(), loop=loop)
             return
-        self.voice_client.play(FFmpegOpusAudio(
-            self.song_queue.get()), after=self.after_song)
+        next_song = self.song_queue.get()
+        print(f"next song: {next_song}")
+        self.voice_client.play(FFmpegOpusAudio(f'cached/{self.name}/{next_song}'), after=self.after_song)
 
     async def after_song_fail(self):
         await self.channel_asked.send(f"que problemas")

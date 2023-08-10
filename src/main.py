@@ -20,9 +20,11 @@ voice_client: discord.VoiceClient | None = None
 async def on_ready():
     for guild in client.guilds:
         if guild.name in DISCORD_GUILDS:
-            print(f'{client.user} está conectado en: {guild.name}')
+            print(f"{client.user} está conectado en: {guild.name}")
         else:
-            print(f'{client.user} está conectado en: {guild.name}, que no está en la lista de servidores admitidos, entonces lo abandona')
+            print(
+                f"{client.user} está conectado en: {guild.name}, que no está en la lista de servidores admitidos, entonces lo abandona"
+            )
             guild.leave()
 
 
@@ -33,33 +35,39 @@ async def on_message(message: discord.Message):
     print(texto)
     if not texto.startswith(CALL_NAME) or message.author.name == CALL_NAME:
         return
-    comando = texto[len(CALL_NAME):]
+    comando = texto[len(CALL_NAME) :]
     print(f"comando: {comando}")
     if comando.startswith("canta lista "):
-        name_list = comando[len("canta lista "):]
+        name_list = comando[len("canta lista ") :]
         print(f"gonna play list {name_list}")
         source = SpotifyCache(url="", name=name_list)
-        voice_client = await source.connect_to_voice_channel(voice_client=voice_client, voice_channel=message.author.voice.channel)
+        voice_client = await source.connect_to_voice_channel(
+            voice_client=voice_client, voice_channel=message.author.voice.channel
+        )
         await source.play_playlist(voice_client=voice_client, message=message)
     elif comando.startswith("canta "):
-        link = comando[len("canta "):]
+        link = comando[len("canta ") :]
         source: MusicSource = None
         if "https://youtu" in link:
             source = YTSource(url=link, name="")
             voice_client = await source.connect_to_voice_channel(
-                voice_client=voice_client, voice_channel=message.author.voice.channel)
+                voice_client=voice_client, voice_channel=message.author.voice.channel
+            )
             source.play_in(voice_client=voice_client)
         else:
             print("Unexpected link")
             await message.reply(
-                "que coño acabas de mandar bro, vete a dar un paseo 🚶‍♂️🚶‍♂️🚶‍♂️")
-    elif comando.startswith('listas'):
+                "que coño acabas de mandar bro, vete a dar un paseo 🚶‍♂️🚶‍♂️🚶‍♂️"
+            )
+    elif comando.startswith("listas"):
         await SpotifyCache.read_list(message=message)
     elif comando.startswith("descarga "):
-        params = comando[len("descarga "):]
+        params = comando[len("descarga ") :]
         params = params.split(" ")
-        if(len(params) != 2):
-            await message.reply("tienes que decirme \"pichi descarga nombre-lista https://open.spotify...\", el nombre de la lista no puede tener espacios")
+        if len(params) != 2:
+            await message.reply(
+                'tienes que decirme "pichi descarga nombre-lista https://open.spotify...", el nombre de la lista no puede tener espacios'
+            )
             return
         name = params[0]
         url = params[1]
@@ -82,5 +90,6 @@ async def on_voice_state_update(member, before, after):
     if voice_state is not None and len(voice_state.channel.members) == 1:
         voice_state.stop()
         await voice_state.disconnect()
+
 
 client.run(DISCORD_TOKEN)

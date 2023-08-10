@@ -9,14 +9,16 @@ class YoutubeSource(MusicSource):
 
     def play_in(self, voice_client: VoiceClient):
         print(f"Playing Youtube audio from: " + self.url)
-        with yt_dlp.YoutubeDL({
-            'format': 'opus/bestaudio/best',
-            'postprocessors': [{  # Extract audio using ffmpeg
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'm4a',
-            }]
-        }) as ydl:
-            info: dict = ydl.sanitize_info(
-                ydl.extract_info(self.url, download=False))
-            voice_client.play(FFmpegPCMAudio(
-                info['url']))
+        with yt_dlp.YoutubeDL(
+            {
+                "format": "opus/bestaudio/best",
+                "postprocessors": [
+                    {  # Extract audio using ffmpeg
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "m4a",
+                    }
+                ],
+            }
+        ) as ydl:
+            info: dict = ydl.sanitize_info(ydl.extract_info(self.url, download=False))
+            voice_client.play(FFmpegPCMAudio(info["url"]))

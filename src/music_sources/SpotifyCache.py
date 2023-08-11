@@ -1,17 +1,17 @@
-from music_sources.MusicSource import MusicSource
 from discord import Message, VoiceClient, FFmpegOpusAudio
 import subprocess
 import json
 import os
 import random
 import asyncio
-import threading
 from queue import Queue
+import yt_dlp
 
 
-class SpotifyCache(MusicSource):
+class SpotifyCache:
     def __init__(self, url: str, name: str) -> None:
-        super().__init__(url, name)
+        self.url = url
+        self.name = name
         self.song_queue = None
         self.voice_client = None
         self.channel_asked = None
@@ -49,7 +49,46 @@ class SpotifyCache(MusicSource):
 
     async def download(self, message: Message) -> None:
         await message.reply("a sus ordenes mi capitan")
+        if os.path.exists("cached"):
+            os.mkdir("cached")
+        if os.path.exists(f"cached/{self.name}"):
+            raise Exception()
         os.mkdir(f"cached/{self.name}")
+        result = -1
+        if "spotify" in self.url:
+            result = self.download_spotify()
+        elif "yout" in self.url:
+            result = self.download_youtube()
+        else:
+            message.reply(
+                "pero que usas bro, pasa una playlist de spotify o youtube, rarete no?"
+            )
+            return
+        if result == 0:
+            self.add_to_list()
+            await message.channel.send(
+                f"listo gfe <@{message.author.id}>, ya puedes escuchar tus rulas"
+            )
+        else:
+            await message.channel.send(f"turboliada con código {result.returncode}")
+
+    def download_youtube(self):
+        with yt_dlp.YoutubeDL(
+            {
+                "format": "opus/bestaudio/best",
+                "outtmpl": f"cached/{self.name}/%(title)s.%(ext)s",
+                "postprocessors": [
+                    {  # Extract audio using ffmpeg
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "opus",
+                    }
+                ],
+            }
+        ) as ydl:
+            ydl.download([self.url])
+        return 0
+
+    def download_spotify(self):
         result = subprocess.run(
             [
                 "python",
@@ -70,15 +109,8 @@ class SpotifyCache(MusicSource):
             f"download ended with code {result.returncode} and stdout: {result.stdout} and stderr: {result.stderr}"
         )
         if result.returncode == 0:
-            await message.channel.send(
-                f"listo gfe <@{message.author.id}>, ya puedes escuchar tus rulas"
-            )
-            self.add_to_list()
-        else:
-            await message.channel.send(f"turboliada con código {result.returncode}")
-            print(
-                "download error stdout -> {result.stdout} y stderr -> {result.stderr}"
-            )
+            return 0
+        return result.returncode
 
     async def play_playlist(self, voice_client: VoiceClient, message: Message) -> None:
         if not os.path.exists(f"cached/{self.name}"):

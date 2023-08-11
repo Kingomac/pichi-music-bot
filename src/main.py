@@ -1,10 +1,8 @@
 import os
 import discord
 from dotenv import load_dotenv
-from music_sources.YoutubeSource import YoutubeSource as YTSource
-from music_sources.MusicSource import MusicSource
 from music_sources.SpotifyCache import SpotifyCache
-from controllers.Music import MusicController
+from controllers.MusicController import MusicController
 from music_sources.SongSource import SongSource
 
 load_dotenv()
@@ -51,7 +49,30 @@ async def on_message(message: discord.Message):
         music_source = comando[len("canta ") :]
 
         if music_source.startswith("lista "):
-            pass
+            list_data = music_source[len("lista ") :]
+            if list_data.startswith("https://"):
+                print("https list, let's play")
+                SongSource.get_list_urls(
+                    link=list_data, result_queue=music_controller.song_queue
+                )
+                if not music_controller.is_playing():
+                    music_controller.play()
+            else:
+                list_data = list_data.split(" ")
+                print(f"list_data = {list_data}")
+                if (
+                    not list_data[1].strip().startswith("https://")
+                    or "list" not in list_data[1]
+                ):
+                    await message.reply("y la playlist???")
+                    return
+                else:
+                    list_name = list_data[0]
+                    list_url = list_data[1]
+                    print(f"list_name = {list_name} ; list_url: {list_url}")
+                    source = SpotifyCache(url=list_url, name=list_name)
+                    await source.download(message=message)
+
             ## TODO -> comprobar si la lista está descargada, en caso de que no lo esté reproducirla por stream
         else:
             if "list" in music_source and "youtu" in music_source:
@@ -60,7 +81,9 @@ async def on_message(message: discord.Message):
                 await message.reply(f"no me metas playlists guarrindongo")
                 return
             try:
-                music_controller.put(SongSource.get_audio_url(link=music_source))
+                music_controller.add_to_queue(
+                    SongSource.get_audio_url(link=music_source)
+                )
                 if not music_controller.is_playing():
                     music_controller.play()
             except Exception as err:

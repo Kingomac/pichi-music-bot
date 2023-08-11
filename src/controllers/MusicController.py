@@ -9,7 +9,7 @@ class MusicController:
         self.voice_client = None
         self.voice_channel = None
 
-    def put(self, item: str):
+    def add_to_queue(self, item: str):
         self.song_queue.put(item)
 
     async def connect_to_voice_channel(self, voice_channel: VoiceChannel):

@@ -1,9 +1,11 @@
 import os
 import discord
 from dotenv import load_dotenv
-from sources.YoutubeSource import YoutubeSource as YTSource
-from sources.MusicSource import MusicSource
-from sources.SpotifyCache import SpotifyCache
+from music_sources.YoutubeSource import YoutubeSource as YTSource
+from music_sources.MusicSource import MusicSource
+from music_sources.SpotifyCache import SpotifyCache
+from controllers.Music import MusicController
+from music_sources.SongSource import SongSource
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -13,7 +15,7 @@ print(DISCORD_GUILDS)
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
-voice_client: discord.VoiceClient | None = None
+music_controller = MusicController()
 
 
 @client.event
@@ -37,6 +39,36 @@ async def on_message(message: discord.Message):
         return
     comando = texto[len(CALL_NAME) :]
     print(f"comando: {comando}")
+
+    if comando.startswith("canta "):
+        if message.author.voice.channel is None:
+            await message.reply("y donde canto, debajo del mar?? 😩😩")
+            return
+
+        await music_controller.connect_to_voice_channel(
+            voice_channel=message.author.voice.channel
+        )
+        music_source = comando[len("canta ") :]
+
+        if music_source.startswith("lista "):
+            pass
+            ## TODO -> comprobar si la lista está descargada, en caso de que no lo esté reproducirla por stream
+        else:
+            if "list" in music_source and "youtu" in music_source:
+                music_source = music_source.split("?list")[0]
+            elif "list" in music_source:
+                await message.reply(f"no me metas playlists guarrindongo")
+                return
+            try:
+                music_controller.put(SongSource.get_audio_url(link=music_source))
+                if not music_controller.is_playing():
+                    music_controller.play()
+            except Exception as err:
+                await message.reply(f"que problemas: {err[:1500]}")
+
+
+"""""
+
     if comando.startswith("canta lista "):
         name_list = comando[len("canta lista ") :]
         print(f"gonna play list {name_list}")
@@ -81,6 +113,7 @@ async def on_message(message: discord.Message):
             raise Exception("dirty mind")
         source = SpotifyCache(url, name)
         await source.download(message=message)
+"""
 
 
 @client.event

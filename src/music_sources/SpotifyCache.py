@@ -1,4 +1,4 @@
-from sources.MusicSource import MusicSource
+from music_sources.MusicSource import MusicSource
 from discord import Message, VoiceClient, FFmpegOpusAudio
 import subprocess
 import json
@@ -16,6 +16,7 @@ class SpotifyCache(MusicSource):
         self.voice_client = None
         self.channel_asked = None
 
+    @staticmethod
     def create_list() -> None:
         file = open("cached/list.json", "w+")
         file.write(json.dumps({}))
@@ -32,6 +33,7 @@ class SpotifyCache(MusicSource):
         file.write(json.dumps(data))
         file.close()
 
+    @staticmethod
     async def read_list(message: Message):
         if not os.path.exists("cached/list.json"):
             await message.reply("no existe lista 😫😫 voy a crearla")

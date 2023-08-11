@@ -1,4 +1,4 @@
-from sources.MusicSource import MusicSource
+from music_sources.MusicSource import MusicSource
 from discord import VoiceClient, FFmpegPCMAudio
 import yt_dlp
 

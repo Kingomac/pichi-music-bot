@@ -37,8 +37,8 @@ class MusicController:
         song = self.song_queue.get()
         source = FFmpegOpusAudio(
             song,
-            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-            options='-vn -filter:a "volume=0.25"',
+            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_on_network_error 1 -reconnect_on_http_error 4xx,5xx -reconnect_delay_max 5",
+            options='-vn -sn -dn -filter:a "volume=0.25" -nostats -bufsize:a 1G',
         )
         self.voice_client.play(source=source, after=self.play)
 

@@ -38,6 +38,14 @@ async def on_message(message: discord.Message):
     comando = texto[len(CALL_NAME) :]
     print(f"comando: {comando}")
 
+    if comando.startswith("descarga "):
+        list_data = list_data.split(" ")
+        list_name = list_data[0]
+        list_url = list_data[1]
+        print(f"list_name = {list_name} ; list_url: {list_url}")
+        source = SpotifyCache(url=list_url, name=list_name)
+        await source.download(message=message)
+
     if comando.startswith("canta "):
         if message.author.voice.channel is None:
             await message.reply("y donde canto, debajo del mar?? 😩😩")
@@ -57,23 +65,15 @@ async def on_message(message: discord.Message):
                 )
                 if not music_controller.is_playing():
                     music_controller.play()
+            elif list_data in SpotifyCache.get_list().keys():
+                source = SpotifyCache(name=list_data, url="")
+                source.add_playlist_to_queue(result_queue=music_controller.song_queue)
+                print(list(music_controller.song_queue.queue))
+                if not music_controller.is_playing():
+                    music_controller.play()
             else:
-                list_data = list_data.split(" ")
-                print(f"list_data = {list_data}")
-                if (
-                    not list_data[1].strip().startswith("https://")
-                    or "list" not in list_data[1]
-                ):
-                    await message.reply("y la playlist???")
-                    return
-                else:
-                    list_name = list_data[0]
-                    list_url = list_data[1]
-                    print(f"list_name = {list_name} ; list_url: {list_url}")
-                    source = SpotifyCache(url=list_url, name=list_name)
-                    await source.download(message=message)
-
-            ## TODO -> comprobar si la lista está descargada, en caso de que no lo esté reproducirla por stream
+                await message.reply("y la playlist???")
+                return
         else:
             if "list" in music_source and "youtu" in music_source:
                 music_source = music_source.split("?list")[0]

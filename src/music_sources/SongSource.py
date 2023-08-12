@@ -44,8 +44,10 @@ class SongSource:
                 while len(urls) > 0:
                     result_queue.put(urls.pop(random.randint(0, len(urls) - 1)))
         elif "spotify" in link and "playlist" in link:
+            print("link lista spotify a descargar: " + link)
             proc = subprocess.run(
-                ["python", "-m", "spotdl", "url", link], capture_output=True
+                ["python", "-m", "spotdl", "--format", "opus", "url", link],
+                capture_output=True,
             )
             if proc.returncode != 0:
                 print("error: " + proc.stderr)

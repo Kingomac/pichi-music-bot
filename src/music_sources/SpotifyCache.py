@@ -34,6 +34,15 @@ class SpotifyCache:
         file.close()
 
     @staticmethod
+    def get_list():
+        if not os.path.exists("cached/list.json"):
+            raise Exception()
+        file = open("cached/list.json", "r")
+        data: dict = json.load(file)
+        file.close()
+        return data
+
+    @staticmethod
     async def read_list(message: Message):
         if not os.path.exists("cached/list.json"):
             await message.reply("no existe lista 😫😫 voy a crearla")
@@ -49,7 +58,7 @@ class SpotifyCache:
 
     async def download(self, message: Message) -> None:
         await message.reply("a sus ordenes mi capitan")
-        if os.path.exists("cached"):
+        if not os.path.exists("cached"):
             os.mkdir("cached")
         if os.path.exists(f"cached/{self.name}"):
             raise Exception()
@@ -132,6 +141,20 @@ class SpotifyCache:
             FFmpegOpusAudio(f"cached/{self.name}/{self.song_queue.get()}"),
             after=self.after_song,
         )
+
+    def add_playlist_to_queue(self, result_queue: Queue):
+        if not os.path.exists(f"cached/{self.name}"):
+            raise Exception("cached files do not exist")
+        song_list = list(
+            filter(
+                lambda entry: (entry.endswith(".opus")),
+                os.listdir(f"cached/{self.name}"),
+            )
+        )
+        while len(song_list) > 0:
+            result_queue.put(
+                f"cached/{self.name}/{song_list.pop(random.randint(0, len(song_list) - 1))}"
+            )
 
     def after_song(self, err: Exception):
         if err != None:

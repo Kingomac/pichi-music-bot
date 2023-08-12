@@ -3,6 +3,13 @@ from queue import Queue
 import asyncio
 
 
+NETWORK_BEFORE_OPTIONS = "-reconnect 1 -reconnect_streamed 1 -reconnect_on_network_error 1 -reconnect_on_http_error 4xx,5xx -reconnect_delay_max 5"
+NETWORK_OPTIONS = '-vn -sn -dn -filter:a "volume=0.25" -nostats -bufsize:a 1G'
+
+LOCAL_BEFORE_OPTIONS = ""
+LOCAL_OPTIONS = '-vn -sn -dn -filter:a "volume=0.25" -bufsize:a 1G'
+
+
 class MusicController:
     def __init__(self) -> None:
         self.song_queue = Queue()
@@ -35,11 +42,12 @@ class MusicController:
             return
 
         song = self.song_queue.get()
-        source = FFmpegOpusAudio(
-            song,
-            before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_on_network_error 1 -reconnect_on_http_error 4xx,5xx -reconnect_delay_max 5",
-            options='-vn -sn -dn -filter:a "volume=0.25" -nostats -bufsize:a 1G',
-        )
+        before_options = LOCAL_BEFORE_OPTIONS
+        options = LOCAL_OPTIONS
+        if song.startswith("https://"):
+            before_options = NETWORK_BEFORE_OPTIONS
+            options = NETWORK_OPTIONS
+        source = FFmpegOpusAudio(song, before_options=before_options, options=options)
         self.voice_client.play(source=source, after=self.play)
 
     def is_playing(self):

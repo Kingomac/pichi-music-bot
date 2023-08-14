@@ -38,7 +38,17 @@ async def on_message(message: discord.Message):
     comando = texto[len(CALL_NAME) :]
     print(f"comando: {comando}")
 
-    if comando.startswith("descarga "):
+    if comando == "siguiente":
+        music_controller.stop()
+        music_controller.play()
+    elif comando == "para":
+        music_controller.pause()
+    elif comando == "sigue":
+        music_controller.resume()
+    elif comando == "vete" or comando == "fuera":
+        music_controller.stop()
+        await music_controller.leave_channel()
+    elif comando.startswith("descarga "):
         list_data = list_data.split(" ")
         list_name = list_data[0]
         list_url = list_data[1]
@@ -46,7 +56,7 @@ async def on_message(message: discord.Message):
         source = SpotifyCache(url=list_url, name=list_name)
         await source.download(message=message)
 
-    if comando.startswith("canta "):
+    elif comando.startswith("canta "):
         if message.author.voice.channel is None:
             await message.reply("y donde canto, debajo del mar?? 😩😩")
             return

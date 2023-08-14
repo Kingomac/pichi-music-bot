@@ -33,6 +33,11 @@ class MusicController:
     def stop(self):
         self.voice_client.stop()
 
+    async def leave_channel(self):
+        await self.voice_client.disconnect()
+        self.voice_client = None
+        self.voice_channel = None
+
     def play(self, *ctx):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

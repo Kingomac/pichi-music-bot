@@ -1,14 +1,14 @@
 import os
 import discord
 from dotenv import load_dotenv
-from music_sources.SpotifyCache import SpotifyCache
+from music_sources.PlaylistCache import PlaylistCache
 from controllers.MusicController import MusicController
 from music_sources.SongSource import SongSource
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DISCORD_GUILDS = os.getenv("DISCORD_GUILDS").strip("[]").split(", ")
-CALL_NAME = "pichi" + " "
+CALL_NAME = "sona" + " "
 print(DISCORD_GUILDS)
 intents = discord.Intents.default()
 intents.message_content = True
@@ -49,13 +49,13 @@ async def on_message(message: discord.Message):
         music_controller.stop()
         await music_controller.leave_channel()
     elif comando == "listas":
-        await SpotifyCache.read_list(message=message)
+        await PlaylistCache.read_list(message=message)
     elif comando.startswith("descarga "):
         list_data = list_data.split(" ")
         list_name = list_data[0]
         list_url = list_data[1]
         print(f"list_name = {list_name} ; list_url: {list_url}")
-        source = SpotifyCache(url=list_url, name=list_name)
+        source = PlaylistCache(url=list_url, name=list_name)
         await source.download(message=message)
 
     elif comando.startswith("canta "):
@@ -77,8 +77,8 @@ async def on_message(message: discord.Message):
                 )
                 if not music_controller.is_playing():
                     music_controller.play()
-            elif list_data in SpotifyCache.get_list().keys():
-                source = SpotifyCache(name=list_data, url="")
+            elif list_data in PlaylistCache.get_list().keys():
+                source = PlaylistCache(name=list_data, url="")
                 source.add_playlist_to_queue(result_queue=music_controller.song_queue)
                 print(list(music_controller.song_queue.queue))
                 if not music_controller.is_playing():
@@ -99,7 +99,7 @@ async def on_message(message: discord.Message):
                 if not music_controller.is_playing():
                     music_controller.play()
             except Exception as err:
-                await message.reply(f"que problemas: {err[:1500]}")
+                await message.reply(f"que problemas: {str(err)[:1500]}")
 
 
 @client.event

@@ -25,6 +25,8 @@ class SongSource:
             ) as ydl:
                 info: dict = ydl.sanitize_info(ydl.extract_info(link, download=False))
                 return info["url"]
+        else:
+            raise Exception("Unknown source")
 
     def get_list_urls(link: str, result_queue: Queue):
         if "youtu" in link and "list=" in link:

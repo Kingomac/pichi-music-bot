@@ -8,7 +8,7 @@ from queue import Queue
 import yt_dlp
 
 
-class SpotifyCache:
+class PlaylistCache:
     def __init__(self, url: str, name: str) -> None:
         self.url = url
         self.name = name
@@ -24,7 +24,7 @@ class SpotifyCache:
 
     def add_to_list(self) -> None:
         if not os.path.exists("cached/list.json"):
-            SpotifyCache.create_list()
+            PlaylistCache.create_list()
         file = open("cached/list.json", "r")
         data = json.load(file)
         file.close()
@@ -46,7 +46,7 @@ class SpotifyCache:
     async def read_list(message: Message):
         if not os.path.exists("cached/list.json"):
             await message.reply("no existe lista 😫😫 voy a crearla")
-            SpotifyCache.create_list()
+            PlaylistCache.create_list()
         file = open("cached/list.json", "r")
         data: dict = json.load(file)
         file.close()

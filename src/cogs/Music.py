@@ -109,3 +109,20 @@ class Music(commands.Cog):
         await asyncio.sleep(10)
         print(list(self.voice_client.auto_queue))
         await ctx.send(list(self.voice_client.auto_queue))
+
+    @commands.command()
+    async def playlist(self, ctx: commands.Context, *, search: str):
+        await self.connect_voice_client(ctx)
+        self.message_channel = ctx.channel
+        results: wavelink.YouTubePlaylist = await wavelink.YouTubePlaylist.search(
+            search
+        )
+        if not results:
+            await ctx.reply("playlist no encontrada bro", ephemeral=True)
+            return
+
+        playlist = results
+        for i in playlist.tracks:
+            await self.voice_client.queue.put_wait(i)
+        self.voice_client.queue.shuffle()
+        await self.voice_client.play(self.voice_client.queue.pop())

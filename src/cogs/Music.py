@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import wavelink
 from wavelink.ext import spotify
+import asyncio
 
 
 class Music(commands.Cog):
@@ -12,8 +13,13 @@ class Music(commands.Cog):
             client_id="0b595b3e9519444193f4c225df6a2462",
             client_secret="4036883f133f4f109b647d5ec9af1d70",
         )
+        self.message_channel: discord.abc.Messageable = None
+        self.autoplay = True
 
     async def connect_voice_client(self, ctx: commands.Context):
+        if ctx.author.voice == None:
+            await ctx.reply("a ver y donde te lo pincho bro", ephemeral=True)
+            return
         if not ctx.voice_client:
             self.voice_client: wavelink.Player = await ctx.author.voice.channel.connect(
                 cls=wavelink.Player
@@ -25,14 +31,21 @@ class Music(commands.Cog):
     async def play(self, ctx: commands.Context, *, search: str) -> None:
         """Simple play command."""
         await self.connect_voice_client(ctx)
+        self.message_channel = ctx.channel
 
         tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
         if not tracks:
-            await ctx.send(f"Sorry I could not find any songs with search: `{search}`")
+            await ctx.reply(
+                f"Sorry I could not find any songs with search: `{search}`",
+                ephemeral=True,
+            )
             return
 
         track: wavelink.YouTubeTrack = tracks[0]
-        await self.voice_client.play(track)
+        if not self.voice_client.is_playing():
+            await self.voice_client.play(track)
+        else:
+            await self.voice_client.queue.put_wait(track)
 
     @commands.command()
     async def spotify(self, ctx: commands.Context, *, search: str):
@@ -74,7 +87,25 @@ class Music(commands.Cog):
         ):
             await self.voice_client.disconnect()
 
-    @commands.Cog.listener()
-    async def on_wavelink_track_end(self, ctx: wavelink.TrackEventPayload):
-        if self.voice_client.queue:
-            await self.voice_client.play(await self.voice_client.queue.get_wait())
+    @commands.command()
+    async def autoplay(self, ctx: commands.Context, *, search: str) -> None:
+        """Simple play command."""
+        await self.connect_voice_client(ctx)
+        self.message_channel = ctx.channel
+
+        tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
+        if not tracks:
+            await ctx.reply(
+                f"Sorry I could not find any songs with search: `{search}`",
+                ephemeral=True,
+            )
+            return
+
+        track: wavelink.YouTubeTrack = tracks[0]
+        if not self.voice_client.is_playing():
+            await self.voice_client.play(track, populate=True)
+        else:
+            await self.voice_client.queue.put_wait(track)
+        await asyncio.sleep(10)
+        print(list(self.voice_client.auto_queue))
+        await ctx.send(list(self.voice_client.auto_queue))

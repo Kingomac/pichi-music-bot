@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import wavelink
+from cogs.Music import Music
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -28,39 +29,9 @@ class Bot(commands.Bot):
             uri="http://localhost:2333", password="youshallnotpass"
         )
         await wavelink.NodePool.connect(client=self, nodes=[node])
+        await self.add_cog(Music(self))
 
 
 bot = Bot()
-
-
-@bot.command()
-async def play(ctx: commands.Context, *, search: str) -> None:
-    """Simple play command."""
-
-    if not ctx.voice_client:
-        vc: wavelink.Player = await ctx.author.voice.channel.connect(
-            cls=wavelink.Player
-        )
-    else:
-        vc: wavelink.Player = ctx.voice_client
-
-    tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
-    if not tracks:
-        await ctx.send(f"Sorry I could not find any songs with search: `{search}`")
-        return
-
-    track: wavelink.YouTubeTrack = tracks[0]
-    await vc.play(track)
-
-
-@bot.command()
-async def disconnect(ctx: commands.Context) -> None:
-    """Simple disconnect command.
-
-    This command assumes there is a currently connected Player.
-    """
-    vc: wavelink.Player = ctx.voice_client
-    await vc.disconnect()
-
 
 bot.run(DISCORD_TOKEN)

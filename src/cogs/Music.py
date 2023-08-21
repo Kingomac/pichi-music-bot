@@ -5,6 +5,11 @@ from wavelink.ext import spotify
 import asyncio
 
 
+class VoiceClientConnectException(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -17,9 +22,18 @@ class Music(commands.Cog):
         self.autoplay = True
 
     async def connect_voice_client(self, ctx: commands.Context):
+        """
+        The function connects the voice client to a voice channel if the author is in a voice channel.
+
+        :param ctx: The `ctx` parameter is an instance of the `commands.Context` class, which represents
+        the context in which a command is being invoked. It contains information about the message, the
+        command, the author, the channel, and other relevant details. In this case, it is used to check
+        if the
+        :type ctx: commands.Context
+        """
         if ctx.author.voice == None:
             await ctx.reply("a ver y donde te lo pincho bro", ephemeral=True)
-            return
+            raise VoiceClientConnectException()
         if not ctx.voice_client:
             self.voice_client: wavelink.Player = await ctx.author.voice.channel.connect(
                 cls=wavelink.Player
@@ -30,7 +44,10 @@ class Music(commands.Cog):
     @commands.command()
     async def play(self, ctx: commands.Context, *, search: str) -> None:
         """Simple play command."""
-        await self.connect_voice_client(ctx)
+        try:
+            await self.connect_voice_client(ctx)
+        except VoiceClientConnectException:
+            return
         self.message_channel = ctx.channel
 
         tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
@@ -49,7 +66,10 @@ class Music(commands.Cog):
 
     @commands.command()
     async def spotify(self, ctx: commands.Context, *, search: str):
-        await self.connect_voice_client(ctx)
+        try:
+            await self.connect_voice_client(ctx)
+        except VoiceClientConnectException:
+            return
         decoded = spotify.decode_url(search)
         if not decoded or decoded["type"] is not spotify.SpotifySearchType.track:
             await ctx.reply("esto no es de spotify bro", ephemeral=True)
@@ -90,7 +110,10 @@ class Music(commands.Cog):
     @commands.command()
     async def autoplay(self, ctx: commands.Context, *, search: str) -> None:
         """Simple play command."""
-        await self.connect_voice_client(ctx)
+        try:
+            await self.connect_voice_client(ctx)
+        except VoiceClientConnectException:
+            return
         self.message_channel = ctx.channel
 
         tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
@@ -112,7 +135,10 @@ class Music(commands.Cog):
 
     @commands.command()
     async def playlist(self, ctx: commands.Context, *, search: str):
-        await self.connect_voice_client(ctx)
+        try:
+            self.connect_voice_client(ctx)
+        except VoiceClientConnectException:
+            return
         self.message_channel = ctx.channel
         results: wavelink.YouTubePlaylist = await wavelink.YouTubePlaylist.search(
             search
@@ -126,3 +152,15 @@ class Music(commands.Cog):
             await self.voice_client.queue.put_wait(i)
         self.voice_client.queue.shuffle()
         await self.voice_client.play(self.voice_client.queue.pop())
+        await ctx.reply(list(self.voice_client.queue))
+
+    @commands.command()
+    async def spotify_playlist(self, ctx: commands.Context, *, search: str):
+        pass
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):
+        if not self.voice_client.is_playing() and len(self.voice_client.queue) > 0:
+            await self.voice_client.play(self.voice_client.queue.pop(), populate=True)
+        for i in self.voice_client.auto_queue:
+            print(f"autoqueue:" + i.name)

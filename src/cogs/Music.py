@@ -173,3 +173,13 @@ class Music(commands.Cog):
             await self.voice_client.play(self.voice_client.queue.pop(), populate=True)
         for i in self.voice_client.auto_queue:
             print(f"autoqueue:" + i.name)
+
+    @commands.command()
+    async def pause(self, ctx: commands.Context):
+        if self.voice_client != None and self.voice_client.is_playing():
+            await self.voice_client.pause()
+
+    @commands.command()
+    async def resume(self, ctx: commands.Context):
+        if self.voice_client != None and self.voice_client.is_paused():
+            await self.voice_client.resume()

@@ -3,3 +3,4 @@ discord
 PyNaCl
 youtube_dl
 spotdl
+Wavelink

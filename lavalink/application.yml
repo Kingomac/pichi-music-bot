@@ -19,7 +19,7 @@ lavalink:
       twitch: true
       vimeo: true
       http: true
-      local: false
+      local: true
     filters: # All filters are enabled by default
       volume: true
       equalizer: true

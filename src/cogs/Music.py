@@ -3,6 +3,7 @@ from discord.ext import commands
 import wavelink
 from wavelink.ext import spotify
 import asyncio
+from cogs.SpotifyCache import SpotifyCache
 
 
 class VoiceClientConnectException(Exception):
@@ -136,10 +137,22 @@ class Music(commands.Cog):
     @commands.command()
     async def playlist(self, ctx: commands.Context, *, search: str):
         try:
-            self.connect_voice_client(ctx)
+            await self.connect_voice_client(ctx)
         except VoiceClientConnectException:
             return
         self.message_channel = ctx.channel
+
+        if search.startswith("https://open.spotify.com/playlist"):
+            if SpotifyCache.is_playlist_cached(search):
+                tracks = SpotifyCache.get_tracks(search)
+                async for i in tracks:
+                    await self.voice_client.queue.put_wait(i)
+                self.voice_client.queue.shuffle()
+                await self.voice_client.play(self.voice_client.queue.pop())
+            else:
+                await ctx.reply("playlist no descargada")
+            return
+
         results: wavelink.YouTubePlaylist = await wavelink.YouTubePlaylist.search(
             search
         )
@@ -153,10 +166,6 @@ class Music(commands.Cog):
         self.voice_client.queue.shuffle()
         await self.voice_client.play(self.voice_client.queue.pop())
         await ctx.reply(list(self.voice_client.queue))
-
-    @commands.command()
-    async def spotify_playlist(self, ctx: commands.Context, *, search: str):
-        pass
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):

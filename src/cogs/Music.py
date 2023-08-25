@@ -12,12 +12,12 @@ class VoiceClientConnectException(Exception):
 
 
 class Music(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, spotify_secrets: tuple[str]) -> None:
         self.bot = bot
         self.voice_client: discord.VoiceClient = None
         self.spotify_client = spotify.SpotifyClient(
-            client_id="0b595b3e9519444193f4c225df6a2462",
-            client_secret="4036883f133f4f109b647d5ec9af1d70",
+            client_id=spotify_secrets[0],
+            client_secret=spotify_secrets[1],
         )
         self.message_channel: discord.abc.Messageable = None
         self.autoplay = True

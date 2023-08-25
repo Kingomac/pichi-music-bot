@@ -8,9 +8,8 @@ from cogs.SpotifyCache import SpotifyCache
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-DISCORD_GUILDS = os.getenv("DISCORD_GUILDS").strip("[]").split(", ")
-CALL_NAME = "sona" + " "
-print(DISCORD_GUILDS)
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 
 class Bot(commands.Bot):
@@ -30,7 +29,9 @@ class Bot(commands.Bot):
             uri="http://localhost:2333", password="youshallnotpass"
         )
         await wavelink.NodePool.connect(client=self, nodes=[node])
-        await self.add_cog(Music(self))
+        await self.add_cog(
+            Music(self, spotify_secrets=(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET))
+        )
         await self.add_cog(SpotifyCache(self))
 
 

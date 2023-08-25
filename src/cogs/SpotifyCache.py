@@ -3,45 +3,50 @@ from discord.ext import commands
 import os
 import subprocess
 import wavelink
+import asyncio
 
 
 class SpotifyCache(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.command(aliases=["playlist-download"])
-    async def playlist_download(self, ctx: commands.Context, *, search: str):
-        await ctx.send("a sus ordenes mi capitan")
+    async def download_playlist(search: str):
         if not os.path.exists("cached"):
             os.mkdir("cached")
         playlist_id = SpotifyCache.get_spotify_playlist_id(search)
         if not os.path.exists(f"cached/{playlist_id}"):
             os.mkdir(f"cached/{playlist_id}")
-        result = subprocess.run(
-            [
-                "python",
-                "-m",
-                "spotdl",
-                "--format",
-                "ogg",
-                "--output",
-                f"cached/{playlist_id}",
-                "sync",
-                search,
-                "--save-file",
-                f"cached/{playlist_id}/syncfile.sync.spotdl",
-            ],
-            capture_output=True,
+        result = await asyncio.create_subprocess_exec(
+            "python",
+            "-m",
+            "spotdl",
+            "--format",
+            "ogg",
+            "--output",
+            f"cached/{playlist_id}",
+            "sync",
+            search,
+            "--save-file",
+            f"cached/{playlist_id}/syncfile.sync.spotdl",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
+        stdout, stderr = await result.communicate()
         print(
-            f"download ended with code {result.returncode} and stdout: {result.stdout} and stderr: {result.stderr}"
+            f"download ended with code {result.returncode} and stdout: {stdout} and stderr: {stderr}"
         )
-        if result.returncode == 0:
+        return result.returncode
+
+    @commands.command(aliases=["playlist-download"])
+    async def playlist_download(self, ctx: commands.Context, *, search: str):
+        await ctx.send("a sus ordenes mi capitan")
+        res = await SpotifyCache.download_playlist(search)
+        if res == 0:
             await ctx.send(
                 "lista descargada, puedes actualizarla usando de nuevo este comando 😉"
             )
         else:
-            await ctx.send(f"f error {result.returncode}")
+            await ctx.send(f"f error {res}")
 
     @staticmethod
     def is_playlist_cached(search: str):
@@ -63,6 +68,6 @@ class SpotifyCache(commands.Cog):
             if not i.endswith(".ogg"):
                 continue
             tracks = await wavelink.tracks.GenericTrack.search(
-                f"C:/Users/Mario/Desktop/pichi-music-bot/cached/{playlist_id}/{i}"
+                f"{os.getcwd()}/cached/{playlist_id}/{i}"
             )
             yield tracks.pop()

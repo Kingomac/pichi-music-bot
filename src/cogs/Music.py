@@ -1,3 +1,5 @@
+# The `Music` class is a Discord bot cog that handles playing music from YouTube and Spotify, as well
+# as managing the voice client and queue.
 import discord
 from discord.ext import commands
 import wavelink
@@ -78,6 +80,20 @@ class Music(commands.Cog):
         await self.play_spotify_song(ctx, search)
 
     async def play_spotify_song(self, ctx: commands.Context, search: str):
+        """
+        The function `play_spotify_song` plays a Spotify song in a voice channel using the provided
+        search query (it must be a url from Spotify).
+
+        :param ctx: The `ctx` parameter is an instance of the `commands.Context` class, which represents
+        the context in which a command is being invoked. It contains information about the command, the
+        message that triggered it, the channel it was invoked in, the author who invoked it, etc
+        :type ctx: commands.Context
+        :param search: The `search` parameter is a string that represents the search query for a song on
+        Spotify. It can be the name of the song, artist, or any other relevant information that can help
+        identify the desired song
+        :type search: str
+        :return: nothing (None).
+        """
         decoded = spotify.decode_url(search)
         if not decoded or decoded["type"] is not spotify.SpotifySearchType.track:
             await ctx.reply("esto no es de spotify bro", ephemeral=True)
@@ -108,6 +124,21 @@ class Music(commands.Cog):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ):
+        """
+        The function checks if the bot is alone in a voice chat, if so, it disconnects
+
+        :param member: The `member` parameter represents the member whose voice state has been updated.
+        It is of type `discord.Member`
+        :type member: discord.Member
+        :param before: The `before` parameter is the `discord.VoiceState` object representing the voice
+        state of the member before the update. It contains information such as the channel the member
+        was in before the update, whether they were muted or deafened, etc
+        :type before: discord.VoiceState
+        :param after: The `after` parameter is an instance of the `discord.VoiceState` class and
+        represents the updated voice state of the member after the change. It contains information such
+        as the channel the member is currently in, whether they are muted or deafened, etc
+        :type after: discord.VoiceState
+        """
         if (
             self.voice_client != None
             and self.voice_client.channel != None
@@ -117,7 +148,22 @@ class Music(commands.Cog):
 
     @commands.command()
     async def autoplay(self, ctx: commands.Context, *, search: str) -> None:
-        """Simple play command."""
+        """
+        The `autoplay` function connects to a voice client, searches for a track based on a given search
+        query, and either plays the track immediately or adds it to the queue if there is already a
+        track playing and fills the auto_queue with recommendations based on that song.
+
+        :param ctx: The `ctx` parameter is an instance of the `commands.Context` class, which represents
+        the context in which a command is being invoked. It contains information about the command
+        invocation, such as the message, the channel, the author, and more
+        :type ctx: commands.Context
+        :param search: The `search` parameter is a string that represents the search query for the
+        desired song or track. It is used to search for tracks on YouTube using the
+        `wavelink.YouTubeTrack.search()` method
+        :type search: str
+        :return: The function does not have a return statement, so it does not explicitly return
+        anything.
+        """
         try:
             await self.connect_voice_client(ctx)
         except VoiceClientConnectException:
@@ -143,6 +189,19 @@ class Music(commands.Cog):
 
     @commands.command()
     async def playlist(self, ctx: commands.Context, *, search: str):
+        """
+        The `playlist` command is used to search for and play a playlist, either from a Spotify
+        link or by searching for a YouTube playlist.
+
+        :param ctx: The `ctx` parameter is an instance of the `commands.Context` class, which represents the
+        context in which a command is being invoked. It contains information about the command invocation,
+        such as the message, the channel, the author, and more
+        :type ctx: commands.Context
+        :param search: The `search` parameter is a string that represents the search query for the playlist.
+        It can be either a URL of a Spotify playlist or a search query for a YouTube playlist
+        :type search: str
+        :return: The code is returning a list of tracks in the voice client's queue.
+        """
         try:
             await self.connect_voice_client(ctx)
         except VoiceClientConnectException:
@@ -176,6 +235,15 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):
+        """
+        This event triggers when a track ends and it makes sure a song is played if there are any in
+        the queue (autoplay in some cases does not work)
+
+        :param payload: The `payload` parameter is an instance of the `wavelink.TrackEventPayload`
+        class. It contains information about the track that has ended, such as the track itself, the
+        player that played the track, and the reason for the track ending
+        :type payload: wavelink.TrackEventPayload
+        """
         if not self.voice_client.is_playing() and len(self.voice_client.queue) > 0:
             await self.voice_client.play(self.voice_client.queue.pop(), populate=True)
         for i in self.voice_client.auto_queue:

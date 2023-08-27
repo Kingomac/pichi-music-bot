@@ -1,7 +1,8 @@
-import discord
+# The `SpotifyCache` class is a Discord bot cog that allows users to download and cache Spotify
+# playlists, and provides methods to check if a playlist is already cached and retrieve the tracks
+# from a cached playlist.
 from discord.ext import commands
 import os
-import subprocess
 import wavelink
 import asyncio
 
@@ -11,6 +12,15 @@ class SpotifyCache(commands.Cog):
         self.bot = bot
 
     async def download_playlist(search: str):
+        """
+        The function `download_playlist` downloads a Spotify playlist using the spotdl library and saves
+        it in a directory with its id as name.
+
+        :param search: The `search` parameter is a string that represents the name or URL of the
+        playlist you want to download
+        :type search: str
+        :return: the return code of the subprocess execution.
+        """
         if not os.path.exists("cached"):
             os.mkdir("cached")
         playlist_id = SpotifyCache.get_spotify_playlist_id(search)

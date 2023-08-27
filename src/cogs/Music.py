@@ -51,6 +51,10 @@ class Music(commands.Cog):
             return
         self.message_channel = ctx.channel
 
+        if search.startswith("https://open.spotify.com"):
+            await self.play_spotify_song(ctx, search)
+            return
+
         tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
         if not tracks:
             await ctx.reply(
@@ -71,6 +75,9 @@ class Music(commands.Cog):
             await self.connect_voice_client(ctx)
         except VoiceClientConnectException:
             return
+        await self.play_spotify_song(ctx, search)
+
+    async def play_spotify_song(self, ctx: commands.Context, search: str):
         decoded = spotify.decode_url(search)
         if not decoded or decoded["type"] is not spotify.SpotifySearchType.track:
             await ctx.reply("esto no es de spotify bro", ephemeral=True)

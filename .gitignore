@@ -1,6 +1,7 @@
 __pycache__
 cached/*
 .env
+.venv
 
 Lavalink.jar
 logs

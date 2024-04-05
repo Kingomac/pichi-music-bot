@@ -4,7 +4,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import wavelink
 from cogs.Music import Music
-from cogs.SpotifyCache import SpotifyCache
+from cogs.SpotifyPlaylist import SpotifyCache
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -26,9 +26,9 @@ class Bot(commands.Bot):
         node: wavelink.Node = wavelink.Node(
             uri="http://localhost:2333", password="youshallnotpass"
         )
-        await wavelink.NodePool.connect(client=self, nodes=[node])
+        await wavelink.Pool.connect(client=self, nodes=[node])
         await self.add_cog(
-            Music(self, spotify_secrets=(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET))
+            Music(self)
         )
         await self.add_cog(SpotifyCache(self))
 

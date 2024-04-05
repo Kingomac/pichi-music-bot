@@ -3,9 +3,8 @@
 import discord
 from discord.ext import commands
 import wavelink
-from wavelink.ext import spotify
 import asyncio
-from cogs.SpotifyCache import SpotifyCache
+from cogs.SpotifyPlaylist import SpotifyCache
 
 
 class VoiceClientConnectException(Exception):
@@ -14,13 +13,9 @@ class VoiceClientConnectException(Exception):
 
 
 class Music(commands.Cog):
-    def __init__(self, bot: commands.Bot, spotify_secrets: tuple[str]) -> None:
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.voice_client: discord.VoiceClient = None
-        self.spotify_client = spotify.SpotifyClient(
-            client_id=spotify_secrets[0],
-            client_secret=spotify_secrets[1],
-        )
         self.message_channel: discord.abc.Messageable = None
         self.autoplay = True
 
@@ -54,10 +49,10 @@ class Music(commands.Cog):
         self.message_channel = ctx.channel
 
         if search.startswith("https://open.spotify.com"):
-            await self.play_spotify_song(ctx, search)
+            await self.reply("no se puede reproducir spotify", ephemeral=True)
             return
 
-        tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
+        tracks: wavelink.Search = await  wavelink.Playable.search(search, source=wavelink.TrackSource.YouTube)
         if not tracks:
             await ctx.reply(
                 f"Sorry I could not find any songs with search: `{search}`",
@@ -65,46 +60,9 @@ class Music(commands.Cog):
             )
             return
 
-        track: wavelink.YouTubeTrack = tracks[0]
-        if not self.voice_client.is_playing():
-            await self.voice_client.play(track)
-        else:
-            await self.voice_client.queue.put_wait(track)
-
-    @commands.command()
-    async def spotify(self, ctx: commands.Context, *, search: str):
-        try:
-            await self.connect_voice_client(ctx)
-        except VoiceClientConnectException:
-            return
-        await self.play_spotify_song(ctx, search)
-
-    async def play_spotify_song(self, ctx: commands.Context, search: str):
-        """
-        The function `play_spotify_song` plays a Spotify song in a voice channel using the provided
-        search query (it must be a url from Spotify).
-
-        :param ctx: The `ctx` parameter is an instance of the `commands.Context` class, which represents
-        the context in which a command is being invoked. It contains information about the command, the
-        message that triggered it, the channel it was invoked in, the author who invoked it, etc
-        :type ctx: commands.Context
-        :param search: The `search` parameter is a string that represents the search query for a song on
-        Spotify. It can be the name of the song, artist, or any other relevant information that can help
-        identify the desired song
-        :type search: str
-        :return: nothing (None).
-        """
-        decoded = spotify.decode_url(search)
-        if not decoded or decoded["type"] is not spotify.SpotifySearchType.track:
-            await ctx.reply("esto no es de spotify bro", ephemeral=True)
-            return
-        tracks: list[spotify.SpotifyTrack] = await self.spotify_client._search(search)
-        if not tracks:
-            await ctx.reply("url rara", ephemeral=True)
-            return
-        track: spotify.SpotifyTrack = tracks[0]
-
-        if not self.voice_client.is_playing():
+        print(tracks)
+        track: wavelink.Playable = tracks[0]
+        if not self.voice_client.playing:
             await self.voice_client.play(track)
         else:
             await self.voice_client.queue.put_wait(track)
@@ -234,7 +192,7 @@ class Music(commands.Cog):
         await ctx.reply(list(self.voice_client.queue))
 
     @commands.Cog.listener()
-    async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):
+    async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         """
         This event triggers when a track ends and it makes sure a song is played if there are any in
         the queue (autoplay in some cases does not work)

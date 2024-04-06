@@ -1,7 +1,6 @@
 from discord.ext import commands
 import discord
 import wavelink
-from ..exceptions import VoiceClientConnectException
 
 class WavelinkSourceCog(commands.Cog):
     def __init__(self, bot: commands.Bot, track_source: wavelink.TrackSource) -> None:
@@ -27,16 +26,13 @@ class WavelinkSourceCog(commands.Cog):
         if ctx.author.voice == None:
             await ctx.reply("a ver y donde te lo pincho bro", ephemeral=True)
             return
-        if not ctx._voice_client:
-            self._voice_client: wavelink.Player = await ctx.author.voice.channel.connect(
-                cls=wavelink.Player
-            )
-        else:
-            self._voice_client: wavelink.Player = ctx._voice_client
+        self._voice_client: wavelink.Player = await ctx.author.voice.channel.connect(
+            cls=wavelink.Player
+        )
     
     async def _play(self, ctx: commands.Context, *, search: str) -> None:
         """Simple play command."""
-        if not ctx._voice_client:
+        if not ctx.voice_client:
             await self.connect_voice_client(ctx)
         
         self._message_channel = ctx.channel
@@ -49,12 +45,15 @@ class WavelinkSourceCog(commands.Cog):
             )
             return
 
-        print(tracks)
         track: wavelink.Playable = tracks[0]
+        print(track)
+        print(f"{self._voice_client.playing=}")
+        #if not self._voice_client.playing:
+        await self._voice_client.queue.put_wait(track)
         if not self._voice_client.playing:
-            await self._voice_client.play(track)
-        else:
-            await self._voice_client.queue.put_wait(track)
+            await self._voice_client.play(await self._voice_client.queue.get_wait(), volume=100)
+        #else:
+        #    await self._voice_client.queue.put_wait(track)
 
     async def _on_voice_state_update(
         self,
@@ -86,8 +85,8 @@ class WavelinkSourceCog(commands.Cog):
     
     async def _disconnect(self, ctx: commands.Context) -> None:
         """Simple disconnect command."""
-        if ctx._voice_client:
-            await ctx._voice_client.disconnect()
+        if ctx.voice_client:
+            await ctx.voice_client.disconnect()
             self._message_channel = None
             self._voice_client = None
         else:
@@ -103,7 +102,9 @@ class WavelinkSourceCog(commands.Cog):
         player that played the track, and the reason for the track ending
         :type payload: wavelink.TrackEventPayload
         """
-        if not self._voice_client.is_playing() and len(self._voice_client.queue) > 0:
-            await self._voice_client.play(self._voice_client.queue.pop(), populate=True)
+        if not self._voice_client:
+            return
+        if not self._voice_client.playing and len(self._voice_client.queue) > 0:
+            await self._voice_client.play(await self._voice_client.queue.get_wait())
         for i in self._voice_client.auto_queue:
             print(f"autoqueue:" + i.name)            

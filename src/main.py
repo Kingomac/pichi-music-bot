@@ -3,8 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import wavelink
-from cogs.Music import Music
-from cogs.SpotifyPlaylist import SpotifyCache
+from cogs import YoutubeCog, WavelinkSourceCog, YoutubeMusicCog
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -27,10 +26,8 @@ class Bot(commands.Bot):
             uri="http://localhost:2333", password="youshallnotpass"
         )
         await wavelink.Pool.connect(client=self, nodes=[node])
-        await self.add_cog(
-            Music(self)
-        )
-        await self.add_cog(SpotifyCache(self))
+        await self.add_cog(YoutubeCog(self))
+        await self.add_cog(YoutubeMusicCog(self))
 
 
 bot = Bot()
